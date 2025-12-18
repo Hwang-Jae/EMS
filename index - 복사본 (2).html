@@ -3,44 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>스마트 안돈 (채널 알림)</title>
+    <title>스마트 안돈 시스템 (최종)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <style>
-        /* 스타일은 기존과 동일하되, 알림 팝업 스타일만 유지 */
-        body { font-family: 'Pretendard', sans-serif; background-color: #121212; color: #eee; margin: 0; padding: 0; padding-bottom: 70px; -webkit-tap-highlight-color: transparent; }
-        .navbar { position: sticky; top: 0; z-index: 100; background-color: #1e1e1e; border-bottom: 1px solid #333; padding: 15px; display: flex; justify-content: space-between; align-items: center; height: 50px; box-sizing: border-box; }
-        .nav-title { font-size: 1.2rem; font-weight: bold; }
-        .back-btn { background: none; border: none; color: #aaa; font-size: 1rem; display: none; cursor: pointer; }
-        .user-badge { background: #333; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; border: 1px solid #444; }
+        /* 기본 스타일 */
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            background-color: #121212; 
+            color: #eee; 
+            margin: 0; 
+            padding: 0; 
+            padding-bottom: 70px; /* 하단 탭 공간 확보 */ 
+            -webkit-tap-highlight-color: transparent; 
+        }
         
-        .tab-bar { position: fixed; bottom: 0; width: 100%; height: 60px; background: #1e1e1e; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-sizing: border-box; }
+        /* 상단 네비게이션 */
+        .navbar { 
+            position: sticky; top: 0; z-index: 100; 
+            background-color: #1e1e1e; 
+            border-bottom: 1px solid #333; 
+            padding: 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            height: 50px; box-sizing: border-box;
+        }
+        .nav-title { font-size: 1.2rem; font-weight: bold; }
+        .back-btn { 
+            background: none; border: none; color: #aaa; 
+            font-size: 1rem; display: none; cursor: pointer; 
+        }
+        .user-badge { 
+            background: #333; padding: 5px 10px; border-radius: 20px; 
+            font-size: 0.8rem; border: 1px solid #444; cursor: pointer;
+        }
+
+        /* 하단 탭바 */
+        .tab-bar { 
+            position: fixed; bottom: 0; width: 100%; height: 60px; 
+            background: #1e1e1e; border-top: 1px solid #333; 
+            display: flex; justify-content: space-around; align-items: center; 
+            z-index: 1000; box-sizing: border-box;
+        }
         .tab-item { flex: 1; text-align: center; color: #777; cursor: pointer; padding: 10px 0; }
         .tab-item.active { color: #2980b9; font-weight: bold; }
         .tab-icon { font-size: 1.2rem; margin-bottom: 3px; display: block; }
         .tab-text { font-size: 0.8rem; }
-        
+
+        /* 화면 전환용 컨테이너 */
         .view-section { display: none; padding: 20px; animation: fadeIn 0.3s; }
         .view-section.active { display: block; }
-        
-        .big-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 100px; margin-bottom: 15px; background: #2c2c2c; border-radius: 12px; border: 1px solid #3a3a3a; padding: 0 25px; box-sizing: border-box; cursor: pointer; }
+
+        /* [홈] 메인 대시보드 스타일 */
+        .big-btn { 
+            display: flex; justify-content: space-between; align-items: center; 
+            width: 100%; height: 100px; margin-bottom: 15px; 
+            background: #2c2c2c; border-radius: 12px; border: 1px solid #3a3a3a; 
+            padding: 0 25px; box-sizing: border-box; cursor: pointer; 
+        }
         .line-label { font-size: 1.8rem; font-weight: 800; }
-        .badge { display: inline-block; padding: 5px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; margin-left: 5px; color: #fff; }
+        .badge { 
+            display: inline-block; padding: 5px 8px; border-radius: 6px; 
+            font-size: 0.85rem; font-weight: bold; margin-left: 5px; color: #fff; 
+        }
         .badge-err { background-color: #e74c3c; animation: pulse 1.5s infinite; }
         .badge-fix { background-color: #3498db; }
         .badge-ok { color: #2ecc71; }
-        
+
+        /* [홈] 상세 그리드 */
         .line-group { margin-bottom: 25px; }
-        .line-head { font-size: 1.1rem; font-weight: bold; color: #aaa; margin-bottom: 10px; padding-left: 5px; border-left: 4px solid #555; }
-        .ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-        .op-card { background: #333; border: 1px solid #444; border-radius: 8px; padding: 10px; cursor: pointer; min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .line-head { 
+            font-size: 1.1rem; font-weight: bold; color: #aaa; 
+            margin-bottom: 10px; padding-left: 5px; border-left: 4px solid #555; 
+        }
+        .ops-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; 
+        }
+        .op-card { 
+            background: #333; border: 1px solid #444; border-radius: 8px; 
+            padding: 10px; cursor: pointer; min-height: 80px; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            text-align: center; 
+        }
         .op-num { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .op-info { font-size: 0.7rem; opacity: 0.9; line-height: 1.2; }
+        
         .st-RUN { background: #27ae60; border-color: #2ecc71; color: white; }
         .st-DOWN { background: #c0392b; border-color: #e74c3c; color: white; animation: blink 1s infinite alternate; }
         .st-PM { background: #2980b9; border-color: #3498db; color: white; }
-        
-        .history-card { background: #222; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 15px; }
+
+        /* [이력] 히스토리 리스트 스타일 */
+        .history-card { 
+            background: #222; border: 1px solid #333; border-radius: 8px; 
+            padding: 15px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 15px; 
+        }
         .hist-time { font-size: 0.8rem; color: #aaa; min-width: 50px; text-align: right; margin-top: 3px; }
         .hist-content { flex: 1; }
         .hist-line { font-weight: bold; font-size: 1rem; color: #fff; margin-bottom: 5px; }
@@ -50,38 +105,45 @@
         .chip-FINISH { background: #27ae60; color: white; }
         .hist-desc { font-size: 0.85rem; color: #ccc; margin-top: 5px; line-height: 1.4; }
         .hist-user { font-size: 0.8rem; color: #777; margin-top: 5px; text-align: right; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #222; width: 90%; max-width: 400px; border-radius: 10px; padding: 20px; max-height: 80vh; overflow-y: auto; text-align: center; }
+
+        /* 모달 (공통) */
+        #code-modal, #login-modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; 
+        }
+        .modal-content { 
+            background: #222; width: 90%; max-width: 400px; border-radius: 10px; 
+            padding: 20px; max-height: 80vh; overflow-y: auto; 
+        }
         .code-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .code-btn { background: #333; border: 1px solid #555; padding: 15px 5px; border-radius: 5px; cursor: pointer; text-align: center; }
+        .code-btn { 
+            background: #333; border: 1px solid #555; padding: 15px 5px; 
+            border-radius: 5px; cursor: pointer; text-align: center; 
+        }
         .code-btn.selected { background: #2ecc71; color: #000; font-weight: bold; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .modal-btn { flex: 1; padding: 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .login-input { width: 100%; padding: 15px; margin: 8px 0; border-radius: 8px; border: none; background: #333; color: white; font-size: 1rem; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 15px; margin-top: 15px; border-radius: 8px; border: none; background: #2980b9; color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
-
-        #alert-popup { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background-color: #c0392b; color: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; animation: slideDown 0.5s; align-items: center; justify-content: space-between; }
-        #alert-popup strong { font-size: 1.1rem; display: block; margin-bottom: 5px; }
-        .alert-close { background: rgba(0,0,0,0.2); border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        /* 로그인 박스 */
+        .login-box { width: 80%; max-width: 300px; text-align: center; }
+        .login-input { 
+            width: 100%; padding: 15px; margin: 8px 0; border-radius: 8px; 
+            border: none; background: #333; color: white; font-size: 1rem; box-sizing: border-box; 
+        }
+        .login-btn { 
+            width: 100%; padding: 15px; margin-top: 15px; border-radius: 8px; 
+            border: none; background: #2980b9; color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; 
+        }
 
         @keyframes blink { from { opacity: 1; } to { opacity: 0.6; } }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideDown { from { top: -100px; } to { top: 20px; } }
     </style>
 </head>
 <body>
 
-    <div id="alert-popup">
-        <div><strong>🚨 라인 호출 발생!</strong><span id="alert-msg">-</span></div>
-        <button class="alert-close" onclick="closeAlert()">닫기</button>
-    </div>
-
-    <audio id="siren-sound" src="data:audio/wav;base64,UklGRl9vT1BXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
-
-    <div id="login-modal" class="modal-overlay" style="display:flex;">
-        <div class="modal-content">
+    <div id="login-modal">
+        <div class="login-box">
             <h2 style="color:white; margin-bottom:30px;">🏭 ANDON LOGIN</h2>
             <input type="text" id="uid" class="login-input" placeholder="ID">
             <input type="password" id="upw" class="login-input" placeholder="PW">
@@ -90,7 +152,7 @@
         </div>
     </div>
 
-    <div id="code-modal" class="modal-overlay">
+    <div id="code-modal">
         <div class="modal-content">
             <h3 style="margin-top:0; border-bottom:1px solid #444; padding-bottom:10px;">코드 선택</h3>
             <div id="modal-step-1">
@@ -130,71 +192,78 @@
     </div>
 
     <div id="tab-history" class="view-section">
-        <div style="text-align:center; padding:10px; color:#888; font-size:0.9rem;">최근 50건 이력</div>
+        <div style="text-align:center; padding:10px; color:#888; font-size:0.9rem;">최근 50건의 이력을 표시합니다.</div>
         <div id="history-list"></div>
     </div>
 
     <div class="tab-bar">
         <div class="tab-item active" onclick="switchTab('monitor')" id="btn-tab-monitor">
-            <span class="tab-icon">📊</span><span class="tab-text">모니터링</span>
+            <span class="tab-icon">📊</span>
+            <span class="tab-text">모니터링</span>
         </div>
         <div class="tab-item" onclick="switchTab('history')" id="btn-tab-history">
-            <span class="tab-icon">🕒</span><span class="tab-text">이력조회</span>
+            <span class="tab-icon">🕒</span>
+            <span class="tab-text">이력조회</span>
         </div>
     </div>
 
     <script>
-        // ============================================
-        // 🚨 텔레그램 채널 설정 (여기에 ID를 입력하세요)
-        // ============================================
-        const TELEGRAM_BOT_TOKEN = '8252490040:AAG8mc_2WB00BaFGHAwp0NEJEhWj-Qw81VY'; 
-        
-        // 2단계에서 알아낸 "-100..." 숫자를 아래 따옴표 안에 넣으세요.
-        // 예: const TELEGRAM_CHANNEL_ID = '-1001234567890';
-        const TELEGRAM_CHANNEL_ID = '-1003437379356'; 
-
-        // ============================================
-        
+        // Supabase 설정 (가짜 스토리지 - 로컬 실행 에러 방지용)
+        const memoryStorage = { store: {}, getItem: function(k){return this.store[k]||null}, setItem: function(k,v){this.store[k]=v}, removeItem: function(k){delete this.store[k]} };
         const supabaseUrl = 'https://xtcoovvghttnwxwdttqa.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0Y29vdnZnaHR0bnd4d2R0dHFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMDE3NzYsImV4cCI6MjA3Njg3Nzc3Nn0.Fmn9b1FoyklF5jw0oiLKp4JT1zRTY9iq9hiCog6HHpE';
-        
-        const memoryStorage = { store: {}, getItem: function(k){return this.store[k]||null}, setItem: function(k,v){this.store[k]=v}, removeItem: function(k){delete this.store[k]} };
         const client = supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: memoryStorage, persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 
+        // 전역 변수
         let currentUser = null;
         let allData = [];
         let codeData = [];
         let currentItem = null;
-        let sel1 = null, sel2 = null;
+        let sel1 = null, sel2 = null; // 모달 선택값 임시 저장
 
-        // --- 초기화 ---
+        // ========================
+        // 1. 초기화 및 로그인
+        // ========================
         async function init() {
-            const { data } = await client.from('MA_CODE_DATA').select('*');
-            if(data) codeData = data;
+            // 코드 데이터 미리 로드 (에러 처리 포함)
+            const { data, error } = await client.from('MA_CODE_DATA').select('*');
+            if(error) {
+                console.error("코드 로딩 실패:", error);
+                alert("코드 데이터를 불러오지 못했습니다. DB 권한을 확인해주세요.");
+            } else if(data) {
+                codeData = data;
+            }
             
+            // 자동 로그인 체크
             try { 
-                const saved = localStorage.getItem('andon_v7_user'); 
+                const saved = localStorage.getItem('andon_v5_user'); 
                 if(saved) { 
                     currentUser = JSON.parse(saved); 
                     applyLogin(); 
+                } else { 
+                    document.getElementById('login-modal').style.display = 'flex'; 
                 } 
-            } catch(e){}
+            } catch(e){ 
+                document.getElementById('login-modal').style.display = 'flex'; 
+            }
         }
 
-        // --- 로그인/로그아웃 ---
         async function login() {
             const id = document.getElementById('uid').value;
             const pw = document.getElementById('upw').value;
+            
+            // 로그인 시도 (MA_USER 테이블)
             const { data, error } = await client.from('MA_USER').select('*').eq('id', id).eq('pw', pw).single();
-            if (error || !data) { document.getElementById('msg').innerText = "로그인 실패"; return; }
+            if (error || !data) { document.getElementById('msg').innerText = "아이디/비밀번호 오류"; return; }
+            
             currentUser = data;
-            localStorage.setItem('andon_v7_user', JSON.stringify(data));
+            localStorage.setItem('andon_v5_user', JSON.stringify(data));
             applyLogin();
         }
 
         function applyLogin() {
             document.getElementById('login-modal').style.display = 'none';
+            // 역할에 따른 아이콘
             const role = currentUser.cmf_1 === 'ADMIN' ? '👑' : (currentUser.cmf_1 === 'MAINT' ? '🔧' : '👷');
             document.getElementById('user-display').innerText = `${role} ${currentUser.id}`;
             fetchData();
@@ -202,40 +271,37 @@
 
         function logout() {
             if(confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('andon_v7_user');
+                localStorage.removeItem('andon_v5_user');
                 location.reload();
             }
         }
 
-        // --- 텔레그램 발송 함수 ---
-        function sendNotification(msg) {
-            // 채널 ID가 입력되어 있으면 거기로 보내고, 아니면 경고
-            if (!TELEGRAM_CHANNEL_ID) {
-                console.warn("텔레그램 채널 ID가 설정되지 않았습니다.");
-                return;
-            }
-            
-            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHANNEL_ID}&text=${encodeURIComponent(msg)}`;
-            fetch(url).then(res => res.json()).then(data => {
-                if(!data.ok) console.error("텔레그램 발송 실패:", data.description);
-            }).catch(e => console.error(e));
-        }
-
-        // --- 모니터링 UI ---
+        // ========================
+        // 2. 탭 전환
+        // ========================
         function switchTab(tabName) {
+            // 탭 활성화 UI
             document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
             document.getElementById(`btn-tab-${tabName}`).classList.add('active');
+            
+            // 화면 전환
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // 이력 탭이면 데이터 새로고침
             if(tabName === 'history') fetchHistory();
         }
 
+        // ========================
+        // 3. 모니터링 (홈/상세)
+        // ========================
         async function fetchData() {
             const { data } = await client.from('andon_lines').select('*').order('line_code').order('operation_code');
             if(data) { allData = data; updateUI(); }
         }
 
         function updateUI() {
+            // 메인 화면 뱃지 갱신
             ['BSA', 'BPA', 'BMA'].forEach(type => {
                 const lines = allData.filter(d => d.line_type === type);
                 const down = lines.filter(d => d.status === 'DOWN').length;
@@ -246,9 +312,11 @@
                 if(down==0 && pm==0) html = `<span class="badge badge-ok">정상</span>`;
                 document.getElementById(`badge-${type}`).innerHTML = html;
             });
+            
+            // 상세 화면이 켜져있다면 갱신
             if(document.getElementById('detail-view').style.display === 'block') {
                 const type = document.getElementById('page-title').innerText.split(' ')[0];
-                renderDetail(type);
+                if(['BSA','BPA','BMA'].includes(type)) renderDetail(type);
             }
         }
 
@@ -270,7 +338,9 @@
         function renderDetail(type) {
             const container = document.getElementById('detail-view');
             container.innerHTML = '';
+            
             const targetData = allData.filter(d => d.line_type === type);
+            // 라인코드로 그룹화
             const grouped = {};
             targetData.forEach(d => { if(!grouped[d.line_code]) grouped[d.line_code] = []; grouped[d.line_code].push(d); });
 
@@ -284,9 +354,14 @@
                 grouped[code].forEach(item => {
                     const card = document.createElement('div');
                     card.className = `op-card st-${item.status}`;
+                    
                     let subInfo = '';
-                    if(item.status === 'DOWN' && item.last_message) subInfo = `<div class="op-info">${item.last_user_id}<br>${item.last_message}</div>`;
-                    else if(item.status === 'PM') subInfo = `<div class="op-info">조치중<br>${item.last_user_id}</div>`;
+                    if(item.status === 'DOWN' && item.last_message) {
+                        subInfo = `<div class="op-info">${item.last_user_id}<br>${item.last_message}</div>`;
+                    } else if(item.status === 'PM') {
+                        subInfo = `<div class="op-info">조치중<br>${item.last_user_id}</div>`;
+                    }
+
                     card.innerHTML = `<div class="op-num">${item.operation_code}</div> ${subInfo}`;
                     card.onclick = () => handleClick(item);
                     gridDiv.appendChild(card);
@@ -296,27 +371,39 @@
             });
         }
 
-        // --- 상태 변경 및 모달 ---
+        // ========================
+        // 4. 상태 변경 & 모달
+        // ========================
         async function handleClick(item) {
             currentItem = item; sel1 = null; sel2 = null;
             const role = currentUser.cmf_1;
+
             if (item.status === 'RUN') {
-                if(role!=='PROD' && role!=='ADMIN') return alert('생산직 권한 필요');
+                // RUN -> DOWN (생산직)
+                if(role!=='PROD' && role!=='ADMIN') return alert(`생산직(PROD) 권한이 필요합니다.`);
                 openModal('FAIL_PHEN', '고장 현상', false);
-            } else if (item.status === 'DOWN') {
-                if(role!=='MAINT' && role!=='ADMIN') return alert('보전반 권한 필요');
-                if(confirm('보전 시작?')) await updateStatus('PM', 'START', null, null, null, null);
-            } else if (item.status === 'PM') {
-                if(role!=='MAINT' && role!=='ADMIN') return alert('보전반 권한 필요');
+            } 
+            else if (item.status === 'DOWN') {
+                // DOWN -> PM (보전반)
+                if(role!=='MAINT' && role!=='ADMIN') return alert(`보전반(MAINT) 권한이 필요합니다.`);
+                if(confirm('보전 작업을 시작하시겠습니까?')) await updateStatus('PM', 'START', null, null, null, null);
+            } 
+            else if (item.status === 'PM') {
+                // PM -> RUN (보전반 완료)
+                if(role!=='MAINT' && role!=='ADMIN') return alert(`보전반(MAINT) 권한이 필요합니다.`);
                 openModal('FAIL_CAUSE', '고장 원인', true, 'ACTION_CODE', '조치 내용');
             }
         }
 
         function openModal(t1, title1, isDouble, t2, title2) {
-            if(!renderCodeList(t1, 'code-list-1', 1)) return alert('코드 데이터 없음');
+            // 데이터 확인 및 렌더링
+            const hasData = renderCodeList(t1, 'code-list-1', 1);
+            if(!hasData) { alert(`DB에서 '${t1}' 코드를 찾을 수 없습니다.`); return; }
+
             document.getElementById('code-modal').style.display = 'flex';
             document.getElementById('modal-step-2').style.display = isDouble ? 'block' : 'none';
             document.getElementById('step-1-title').innerText = title1;
+
             if(isDouble) {
                 renderCodeList(t2, 'code-list-2', 2);
                 document.getElementById('step-2-title').innerText = title2;
@@ -327,17 +414,26 @@
         function renderCodeList(table, elId, step) {
             const list = document.getElementById(elId);
             list.innerHTML = '';
-            const filtered = codeData.filter(c => (c.TABLE_NAME || c.table_name) === table);
+            
+            // 대소문자 무시하고 테이블명 매칭
+            const filtered = codeData.filter(c => {
+                const dbTable = c.TABLE_NAME || c.table_name;
+                return dbTable === table;
+            });
+
             if(filtered.length === 0) return false;
+
             filtered.forEach(c => {
                 const key = c.KEY_1 || c.key_1;
                 const desc = c.DATA_2 || c.data_2;
+
                 const btn = document.createElement('div');
                 btn.className = 'code-btn';
                 btn.innerHTML = `<div style="font-size:1.1rem;margin-bottom:2px;">${key}</div><div style="font-size:0.75rem;color:#aaa;">${desc}</div>`;
                 btn.onclick = () => {
                     const obj = { KEY_1: key, DATA_2: desc };
                     if(step===1) sel1 = obj; else sel2 = obj;
+                    
                     Array.from(list.children).forEach(ch=>ch.classList.remove('selected'));
                     btn.classList.add('selected');
                     updateConfirm();
@@ -350,73 +446,117 @@
         function updateConfirm() {
             const isDouble = document.getElementById('modal-step-2').style.display === 'block';
             const btn = document.getElementById('modal-confirm-btn');
-            if((!isDouble && sel1) || (isDouble && sel1 && sel2)) btn.style.opacity = '1', btn.style.pointerEvents = 'auto';
-            else btn.style.opacity = '0.5', btn.style.pointerEvents = 'none';
+            
+            if((!isDouble && sel1) || (isDouble && sel1 && sel2)) {
+                btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+            } else {
+                btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none';
+            }
         }
         function closeModal() { document.getElementById('code-modal').style.display = 'none'; }
 
         async function confirmCodeSelection() {
             const isDouble = document.getElementById('modal-step-2').style.display === 'block';
             if(!isDouble) {
+                // RUN -> DOWN
                 await updateStatus('DOWN', 'CALL', sel1.KEY_1, null, null, sel1.DATA_2);
-                // [텔레그램 발송] 채널로 메시지 전송
-                const msg = `🚨 [라인호출 발생]\n📍 위치: ${currentItem.line_code} - OP${currentItem.operation_code}\n🔧 현상: ${sel1.DATA_2} (${sel1.KEY_1})\n👤 호출자: ${currentUser.id}`;
-                sendNotification(msg);
             } else {
+                // PM -> RUN
                 await updateStatus('RUN', 'FINISH', null, sel1.KEY_1, sel2.KEY_1, `원인:${sel1.KEY_1}/조치:${sel2.KEY_1}`);
             }
             closeModal();
         }
 
         async function updateStatus(st, type, phen, cause, act, msg) {
-            await client.from('andon_lines').update({ status: st, last_user_id: currentUser.id, last_message: msg, last_updated_at: new Date() }).eq('id', currentItem.id);
-            await client.from('andon_history').insert({ line_id: currentItem.id, user_id: currentUser.id, action_type: type, status_snapshot: st, fail_phen_code: phen, fail_cause_code: cause, action_code: act, message: msg });
-        }
-
-        // --- 알림 트리거 ---
-        function triggerAlert(lineCode, opCode) {
-            if(currentUser && (currentUser.cmf_1 === 'MAINT' || currentUser.cmf_1 === 'ADMIN')) {
-                audio.play().catch(e => {});
-                document.getElementById('alert-msg').innerText = `${lineCode} - OP ${opCode}`;
-                document.getElementById('alert-popup').style.display = 'flex';
-                if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
-            }
-        }
-        function closeAlert() { document.getElementById('alert-popup').style.display = 'none'; }
-
-        client.channel('v7-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'andon_lines' }, payload => {
-                fetchData();
-                if(payload.eventType === 'UPDATE' && payload.new.status === 'DOWN' && payload.old.status !== 'DOWN') {
-                    triggerAlert(payload.new.line_code, payload.new.operation_code);
-                }
-            }).subscribe();
+            // DB 업데이트 (andon_lines)
+            await client.from('andon_lines').update({ 
+                status: st, 
+                last_user_id: currentUser.id, 
+                last_message: msg, 
+                last_updated_at: new Date() 
+            }).eq('id', currentItem.id);
             
+            // 이력 저장 (andon_history)
+            await client.from('andon_history').insert({ 
+                line_id: currentItem.id, 
+                user_id: currentUser.id, 
+                action_type: type, 
+                status_snapshot: st, 
+                fail_phen_code: phen, 
+                fail_cause_code: cause, 
+                action_code: act, 
+                message: msg 
+            });
+        }
+
+        // ========================
+        // 5. 이력 조회
+        // ========================
         async function fetchHistory() {
             const listDiv = document.getElementById('history-list');
             listDiv.innerHTML = '<div style="text-align:center;padding:20px;">로딩중...</div>';
-            const { data } = await client.from('andon_history').select('*').order('created_at', { ascending: false }).limit(50);
-            if(!data || data.length === 0) { listDiv.innerHTML = '<div style="text-align:center;padding:20px;">이력이 없습니다.</div>'; return; }
+            
+            const { data } = await client.from('andon_history')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if(!data || data.length === 0) {
+                listDiv.innerHTML = '<div style="text-align:center;padding:20px;">이력이 없습니다.</div>';
+                return;
+            }
+
             listDiv.innerHTML = '';
             data.forEach(h => {
                 const lineInfo = allData.find(l => l.id === h.line_id);
-                const lineName = lineInfo ? `${lineInfo.line_code} - OP${lineInfo.operation_code}` : 'Unknown';
-                let detail = h.message || '-';
-                if(h.fail_phen_code) detail = `현상: ${getCodeDesc('FAIL_PHEN', h.fail_phen_code)}`;
-                if(h.fail_cause_code) detail = `원인: ${getCodeDesc('FAIL_CAUSE', h.fail_cause_code)} <br> 조치: ${getCodeDesc('ACTION_CODE', h.action_code)}`;
-                const d = new Date(h.created_at);
-                const t = `${d.getMonth()+1}/${d.getDate()} <br> ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                let chip = h.action_type;
-                if(chip==='CALL') chip='호출'; if(chip==='START') chip='시작'; if(chip==='FINISH') chip='완료';
-                listDiv.innerHTML += `<div class="history-card"><div class="hist-time">${t}</div><div class="hist-content"><div class="hist-line"><span class="hist-chip chip-${h.action_type}">${chip}</span>${lineName}</div><div class="hist-desc">${detail}</div><div class="hist-user">by ${h.user_id}</div></div></div>`;
+                const lineName = lineInfo ? `${lineInfo.line_code} - OP${lineInfo.operation_code}` : 'Unknown Line';
+                
+                // 코드 해석
+                let detailText = h.message || '-';
+                if(h.fail_phen_code) detailText = `현상: ${getCodeDesc('FAIL_PHEN', h.fail_phen_code)}`;
+                if(h.fail_cause_code) detailText = `원인: ${getCodeDesc('FAIL_CAUSE', h.fail_cause_code)} <br> 조치: ${getCodeDesc('ACTION_CODE', h.action_code)}`;
+
+                const date = new Date(h.created_at);
+                const timeStr = `${date.getMonth()+1}/${date.getDate()} <br> ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                
+                let chipLabel = h.action_type;
+                if(h.action_type==='CALL') chipLabel = '호출';
+                if(h.action_type==='START') chipLabel = '시작';
+                if(h.action_type==='FINISH') chipLabel = '완료';
+
+                const html = `
+                    <div class="history-card">
+                        <div class="hist-time">${timeStr}</div>
+                        <div class="hist-content">
+                            <div class="hist-line">
+                                <span class="hist-chip chip-${h.action_type}">${chipLabel}</span>
+                                ${lineName}
+                            </div>
+                            <div class="hist-desc">${detailText}</div>
+                            <div class="hist-user">by ${h.user_id}</div>
+                        </div>
+                    </div>
+                `;
+                listDiv.innerHTML += html;
             });
         }
 
         function getCodeDesc(table, key) {
-            const found = codeData.find(c => (c.TABLE_NAME||c.table_name)===table && (c.KEY_1||c.key_1)===key);
-            return found ? `${found.DATA_2||found.data_2} (${key})` : key;
+            const found = codeData.find(c => {
+                const tName = c.TABLE_NAME || c.table_name;
+                const kName = c.KEY_1 || c.key_1;
+                return tName === table && kName === key;
+            });
+            return found ? `${found.DATA_2 || found.data_2} (${key})` : key;
         }
 
+        // ========================
+        // 6. 실행 및 리얼타임
+        // ========================
+        client.channel('v5-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'andon_lines' }, fetchData)
+            .subscribe();
+            
         init();
     </script>
 </body>
