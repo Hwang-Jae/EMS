@@ -368,30 +368,10 @@
             closeModal();
         }
 
-        // 기존 updateStatus 함수를 이것으로 교체하세요
-async function updateStatus(st, type, phen, cause, act, msg) {
-    // 1. 마스터 테이블 상태 업데이트
-    await client.from('andon_lines').update({ 
-        status: st, 
-        last_user_id: currentUser.id, 
-        last_message: msg, 
-        last_updated_at: new Date() 
-    }).eq('id', currentItem.id);
-
-    // 2. 이력 테이블 저장 (스냅샷 데이터 line_code, operation_code 추가)
-    await client.from('andon_history').insert({ 
-        line_id: currentItem.id, 
-        line_code: currentItem.line_code,           // [추가됨] 라인 코드 스냅샷
-        operation_code: currentItem.operation_code, // [추가됨] 공정 코드 스냅샷
-        user_id: currentUser.id, 
-        action_type: type, 
-        status_snapshot: st, 
-        fail_phen_code: phen, 
-        fail_cause_code: cause, 
-        action_code: act, 
-        message: msg 
-    });
-}
+        async function updateStatus(st, type, phen, cause, act, msg) {
+            await client.from('andon_lines').update({ status: st, last_user_id: currentUser.id, last_message: msg, last_updated_at: new Date() }).eq('id', currentItem.id);
+            await client.from('andon_history').insert({ line_id: currentItem.id, user_id: currentUser.id, action_type: type, status_snapshot: st, fail_phen_code: phen, fail_cause_code: cause, action_code: act, message: msg });
+        }
 
         // --- 알림 트리거 ---
         function triggerAlert(lineCode, opCode) {
@@ -412,61 +392,25 @@ async function updateStatus(st, type, phen, cause, act, msg) {
                 }
             }).subscribe();
             
-        // 기존 fetchHistory 함수를 이것으로 교체하세요
-async function fetchHistory() {
-    const listDiv = document.getElementById('history-list');
-    listDiv.innerHTML = '<div style="text-align:center;padding:20px;">로딩중...</div>';
-    
-    // 이력 조회
-    const { data } = await client.from('andon_history').select('*').order('created_at', { ascending: false }).limit(50);
-    
-    if(!data || data.length === 0) { 
-        listDiv.innerHTML = '<div style="text-align:center;padding:20px;">이력이 없습니다.</div>'; 
-        return; 
-    }
-    
-    listDiv.innerHTML = '';
-    
-    data.forEach(h => {
-        // [변경됨] 라인 명칭 표시 로직
-        // 1순위: 이력 테이블에 저장된 스냅샷 코드 사용 (line_code, operation_code)
-        // 2순위: 스냅샷이 없으면(구버전 데이터) allData에서 ID로 조회
-        let lineName = '';
-        if (h.line_code && h.operation_code) {
-            lineName = `${h.line_code} - OP${h.operation_code}`;
-        } else {
-            const lineInfo = allData.find(l => l.id === h.line_id);
-            lineName = lineInfo ? `${lineInfo.line_code} - OP${lineInfo.operation_code}` : '삭제된 라인';
+        async function fetchHistory() {
+            const listDiv = document.getElementById('history-list');
+            listDiv.innerHTML = '<div style="text-align:center;padding:20px;">로딩중...</div>';
+            const { data } = await client.from('andon_history').select('*').order('created_at', { ascending: false }).limit(50);
+            if(!data || data.length === 0) { listDiv.innerHTML = '<div style="text-align:center;padding:20px;">이력이 없습니다.</div>'; return; }
+            listDiv.innerHTML = '';
+            data.forEach(h => {
+                const lineInfo = allData.find(l => l.id === h.line_id);
+                const lineName = lineInfo ? `${lineInfo.line_code} - OP${lineInfo.operation_code}` : 'Unknown';
+                let detail = h.message || '-';
+                if(h.fail_phen_code) detail = `현상: ${getCodeDesc('FAIL_PHEN', h.fail_phen_code)}`;
+                if(h.fail_cause_code) detail = `원인: ${getCodeDesc('FAIL_CAUSE', h.fail_cause_code)} <br> 조치: ${getCodeDesc('ACTION_CODE', h.action_code)}`;
+                const d = new Date(h.created_at);
+                const t = `${d.getMonth()+1}/${d.getDate()} <br> ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                let chip = h.action_type;
+                if(chip==='CALL') chip='호출'; if(chip==='START') chip='시작'; if(chip==='FINISH') chip='완료';
+                listDiv.innerHTML += `<div class="history-card"><div class="hist-time">${t}</div><div class="hist-content"><div class="hist-line"><span class="hist-chip chip-${h.action_type}">${chip}</span>${lineName}</div><div class="hist-desc">${detail}</div><div class="hist-user">by ${h.user_id}</div></div></div>`;
+            });
         }
-
-        // 상세 내용 구성
-        let detail = h.message || '-';
-        if(h.fail_phen_code) detail = `현상: ${getCodeDesc('FAIL_PHEN', h.fail_phen_code)}`;
-        if(h.fail_cause_code) detail = `원인: ${getCodeDesc('FAIL_CAUSE', h.fail_cause_code)} <br> 조치: ${getCodeDesc('ACTION_CODE', h.action_code)}`;
-        
-        // 시간 포맷
-        const d = new Date(h.created_at);
-        const t = `${d.getMonth()+1}/${d.getDate()} <br> ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        
-        // 칩 스타일
-        let chip = h.action_type;
-        if(chip==='CALL') chip='호출'; if(chip==='START') chip='시작'; if(chip==='FINISH') chip='완료';
-        
-        // HTML 렌더링
-        listDiv.innerHTML += `
-            <div class="history-card">
-                <div class="hist-time">${t}</div>
-                <div class="hist-content">
-                    <div class="hist-line">
-                        <span class="hist-chip chip-${h.action_type}">${chip}</span>
-                        ${lineName}
-                    </div>
-                    <div class="hist-desc">${detail}</div>
-                    <div class="hist-user">by ${h.user_id}</div>
-                </div>
-            </div>`;
-    });
-}
 
         function getCodeDesc(table, key) {
             const found = codeData.find(c => (c.TABLE_NAME||c.table_name)===table && (c.KEY_1||c.key_1)===key);
